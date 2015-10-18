@@ -28,13 +28,13 @@ type Mappa() =
   let mutable m2DArray= Array2D.zeroCreate<int> 5 5
   let mutable w2v=new Drawing2D.Matrix()
   let mutable v2w=new Drawing2D.Matrix()
-  let imFront=Image.FromFile("C:/Users/allen/Desktop/LinkFront.png")
-  let imLeft=Image.FromFile("C:/Users/allen/Desktop/LinkLeft.png")
-  let imRight=Image.FromFile("C:/Users/allen/Desktop/LinkRight.png")
-  let imBack=Image.FromFile("C:/Users/allen/Desktop/LinkBack.png")
-  let imgTile = Image.FromFile("C:/Users/allen/Desktop/Wall.png")
-  let imgFloor= Image.FromFile("C:/Users/allen/Desktop/Floor.png")
-  let imgDoor =Image.FromFile("C:/Users/allen/Desktop/Door.png")
+  let imFront=Image.FromFile("C:/Users/allen/Desktop/ProgUni/moveOrJump/LinkFront.png")
+  let imLeft=Image.FromFile("C:/Users/allen/Desktop/ProgUni/moveOrJump/LinkLeft.png")
+  let imRight=Image.FromFile("C:/Users/allen/Desktop/ProgUni/moveOrJump/LinkRight.png")
+  let imBack=Image.FromFile("C:/Users/allen/Desktop/ProgUni/moveOrJump/LinkBack.png")
+  let imgTile = Image.FromFile("C:/Users/allen/Desktop/ProgUni/moveOrJump/Wall.png")
+  let imgFloor= Image.FromFile("C:/Users/allen/Desktop/ProgUni/moveOrJump/Floor.png")
+  let imgDoor =Image.FromFile("C:/Users/allen/Desktop/ProgUni/moveOrJump/Door.png")
   let mutable drawingImg=imFront
   let mutable Dir=1
 
@@ -56,7 +56,7 @@ type Mappa() =
     a.[0]
  
   override this.OnLoad e =
-    let arrS=System.IO.File.ReadAllLines(@"C:\Users\allen\Desktop\b1.txt")
+    let arrS=System.IO.File.ReadAllLines(@"C:\Users\allen\Desktop\ProgUni\moveOrJump\b1.txt")
     Height1<-System.Int32.Parse(arrS.[0])
     Width1<-System.Int32.Parse(arrS.[1])
     m2DArray<-Array2D.zeroCreate<int> Height1 Width1
