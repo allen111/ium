@@ -1,5 +1,5 @@
 ﻿open System.Windows.Forms
-open System.Collections
+open System.Collections.Generic
 open System.Drawing
 open System.Text.RegularExpressions
 let f= new Form(TopMost=true)
@@ -22,7 +22,7 @@ type aaa()as this=
             )
         t.Start()
     
-    
+    let mutable strlist=new List<string>()
     override this.OnMouseMove e=
         ()
 
@@ -38,14 +38,26 @@ type aaa()as this=
         let g=e.Graphics
         let mutable i=PointF(10.f,10.f)
         let b=Clipboard.GetFileDropList()
+        if Clipboard.ContainsText() then
+            let c=Clipboard.GetText()
+            g.DrawString(c,this.Parent.Font,Brushes.Black,i)
+            i<-PointF(10.f,i.Y+20.f)
+//        strlist.Add(c)
+//        strlist |> Seq.iter (fun e->
+//            g.DrawString(e,this.Parent.Font,Brushes.Black,i)
+//            i<-PointF(10.f,i.Y+20.f) 
+//            )
         let a=b.GetEnumerator()
         while (a.MoveNext()) do
             g.DrawString(a.Current,this.Parent.Font,Brushes.Black,i)
             i<-PointF(10.f,i.Y+20.f)
             let pattern = @"\d*\.png"
             let regex= new Regex(pattern,RegexOptions.IgnoreCase)
-            if regex.IsMatch(a.Current) then
-                printfn "img"
+            let pattern1 = @"\d*\.jpg"
+            let regex1= new Regex(pattern1,RegexOptions.IgnoreCase)
+            
+            if regex.IsMatch(a.Current) || regex1.IsMatch(a.Current) then
+                
                 let imgT=Image.FromFile(a.Current)
                 g.DrawImage(imgT,RectangleF(i.X,i.Y,100.f,100.f))       
                 i<-PointF(10.f,i.Y+100.f)
