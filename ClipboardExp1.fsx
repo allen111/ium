@@ -68,16 +68,20 @@ type clipH()=
     let mutable applist=new List<appunto>()
     let mutable maxCapacity=10
     let mutable currCapacity=0
-    let t=new Timer(Interval=100)
-    let currMat=Clipboard.GetDataObject
+    
     let Updater=new CLipUpdate()
+    let clear ()=
+        applist.Clear()
+        currCapacity<-0
+
     do Updater.CUpdate.Add(fun _->
         if Clipboard.ContainsText() then
             let tmpSTr=Clipboard.GetText()
+            let alt=tmpSTr.Split('\n').Length
             let appstrT=new appunto(STR=tmpSTr,Location=PointF(10.f , single currCapacity*15.f),TIPO=0)
-            //problema con stringhe multiriga che palle
             applist.Add(appstrT)
-            currCapacity<-currCapacity+1
+            currCapacity<-currCapacity+alt
+        
         if Clipboard.ContainsFileDropList() then
             let tmpFD=Clipboard.GetFileDropList()
             let a=tmpFD.GetEnumerator()
@@ -92,6 +96,7 @@ type clipH()=
             b.Paint g
             )
     member this.Paint = paint
+    member this.Clear=clear
 
 //===========================================================================
 
@@ -100,18 +105,21 @@ type ed() as this=
     do this.SetStyle(ControlStyles.AllPaintingInWmPaint 
                      ||| ControlStyles.OptimizedDoubleBuffer, true)
 
-
+    let b=new Button(Text="clear",Left=f.Width-100,Top=20,Width=100,Height=20)
+    do this.Controls.Add(b)
+    
     let aaa= new clipH()
+    do b.Click.Add(fun _->aaa.Clear())
+
     let t= new Timer(Interval=1)
     do t.Tick.Add(fun _->this.Invalidate())
     do t.Start()
-//    let aa=new appunto(Location=PointF(10.f,10.f),STR="dsfafdsfa123",TIPO=0)
+
     override this.OnPaint e=
               aaa.Paint e.Graphics
 
-
-
-
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 let n=new ed(Dock=DockStyle.Fill)
 f.Controls.Add(n)
 f.Invalidate()
+n.Focus()
