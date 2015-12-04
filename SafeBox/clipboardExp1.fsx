@@ -1,4 +1,4 @@
-open System.Windows.Forms
+﻿open System.Windows.Forms
 open System.Collections.Generic
 open System.Drawing
 open System.Text.RegularExpressions
