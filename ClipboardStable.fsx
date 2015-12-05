@@ -141,7 +141,7 @@ type clipH()=
             while(a.MoveNext()) do
                 let tmpBs=a.Current.Split('\\')
                 let tmpb=tmpBs.[tmpBs.Length-1]
-                let appFDT=new appunto(STR=tmpb,Path=a.Current,Location=PointF(10.f , single (currCapacity)*15.f),TIPO=2,Altezza=h)
+                let appFDT=new appunto(STR=tmpb,Path=a.Current,Location=PointF(10.f , single (currCapacity)*15.f),TIPO=2,Altezza=1)
                 applist.Add(appFDT)
                 currCapacity<-currCapacity+1
                 h<-h+1
@@ -188,22 +188,20 @@ type ed() as this=
     do this.Controls.Add(b)
     
     let aaa= new clipH()
-    do b.Click.Add(fun _->aaa.Clear();Clipboard.Clear())
+    do b.Click.Add(fun _->aaa.Clear();Clipboard.Clear();w2v<- new Drawing2D.Matrix();v2w <- new Drawing2D.Matrix())
 
     let t= new Timer(Interval=1)
     do t.Tick.Add(fun _->this.Invalidate())
     do t.Start()
 
     
-        
-        
 
     override this.OnMouseWheel  e=
         //scroll base 
         if e.Delta>0 then
-            translateW(0.f,-15.f)
-        else
             translateW(0.f,15.f)
+        else
+            translateW(0.f,-15.f)
 
 
     override this.OnPaint e=
