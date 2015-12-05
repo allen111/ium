@@ -81,11 +81,11 @@ type appunto()=
             2->filepath group
             3->image(bitmap)
     *)
-    let paint (g:Graphics)=
+    let paint (g:Graphics)(p:PointF)=
         match tipo with 
-            |0->g.DrawString(str,fnt,Brushes.Black,location)
+            |0->g.DrawString(str,fnt,Brushes.Black,p)
             |1->()
-            |2->g.DrawString(str,fnt,Brushes.Black,location)
+            |2->g.DrawString(str,fnt,Brushes.Black,p)
             |_->()
 
     member this.Paint=paint
@@ -135,9 +135,14 @@ type clipH()=
         )
     
     let paint (g:Graphics)=
-        applist |> Seq.iter (fun b->
-            b.Paint g
-            )
+        let len=applist.Count 
+        let mutable pt=PointF(10.f,10.f)
+        for b in len-1 .. -1 .. 0 do
+            applist.[b].Paint g pt
+            pt<- PointF(10.f,pt.Y+single(applist.[b].Altezza)*15.f)
+//        applist |> Seq.iter (fun b->
+//            b.Paint g
+//            )
     member this.Paint = paint
     member this.Clear=clear
 
