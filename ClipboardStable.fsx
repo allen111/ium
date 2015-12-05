@@ -76,8 +76,12 @@ type appunto()=
     let mutable location=PointF()
     let mutable altezza=1
     let fnt=new Font(FontFamily.GenericSansSerif,11.f)
-    
-
+    let mutable sizedString=str
+    let sizing ()=
+        if str.Length>30 then
+            sizedString<-str.Substring(0,30)+"..."
+        else
+            sizedString<-str
     (*
         tipi
             0->text
@@ -88,7 +92,7 @@ type appunto()=
 
     let paint (g:Graphics)(p:PointF)=
         match tipo with 
-            |0->g.DrawString(str,fnt,Brushes.Black,p)
+            |0->g.DrawString(sizedString,fnt,Brushes.Black,p)
             |1->()
             |2->g.DrawString(str,fnt,Brushes.Black,p)
             |_->()
@@ -96,7 +100,7 @@ type appunto()=
     member this.Paint=paint
     member this.STR
         with get()=str
-        and set(v)=str<-v
+        and set(v)=str<-v;sizing()
     member this.Location
         with get()=location
         and set(v)=location<-v
@@ -209,6 +213,6 @@ type ed() as this=
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 let n=new ed(Dock=DockStyle.Fill)
 f.Controls.Add(n)
-
+f.TopMost<-true
 f.Invalidate()
 n.Focus()
