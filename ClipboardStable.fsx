@@ -94,15 +94,14 @@ type appunto()=
     *)
 
     let paint (g:Graphics)(p:PointF)=
-        match tipo with 
-            |0->
-                if selected then
+        if selected then
                     bru<-Brushes.Red
                 else
                     bru<-Brushes.Black
-                g.DrawString(sizedString,fnt,bru,p)
+        match tipo with 
+            |0->g.DrawString(sizedString,fnt,bru,p)
             |1->()
-            |2->g.DrawString(str,fnt,Brushes.Black,p)
+            |2->g.DrawString(str,fnt,bru,p)
             |_->()
 
     member this.Paint=paint
@@ -148,11 +147,12 @@ type clipH()=
             
             let tmpFD=Clipboard.GetFileDropList()
             let a=tmpFD.GetEnumerator()
+            applist |> Seq.iter (fun b-> b.Selected<-false)
             let mutable h=1
             while(a.MoveNext()) do
                 let tmpBs=a.Current.Split('\\')
                 let tmpb=tmpBs.[tmpBs.Length-1]
-                let appFDT=new appunto(STR=tmpb,Path=a.Current,Location=PointF(10.f , single (currCapacity)*15.f),TIPO=2,Altezza=1)
+                let appFDT=new appunto(STR=tmpb,Path=a.Current,Location=PointF(10.f , single (currCapacity)*15.f),TIPO=2,Altezza=1,Selected=true)
                 applist.Add(appFDT)
                 currCapacity<-currCapacity+1
                 h<-h+1
@@ -225,11 +225,3 @@ f.Controls.Add(n)
 f.TopMost<-true
 f.Invalidate()
 n.Focus()
-
-
-
-
-
-
-
-
