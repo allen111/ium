@@ -61,7 +61,8 @@ type ClipboardAux()as this=
         let t=climod.ChangeClipboardChain(this.Handle,nextClipboardViewer)
         ()
 
-    member this.ClipboardChanged=ClipboardChangedEvent.Publish        
+    member this.ClipboardChanged=ClipboardChangedEvent.Publish    
+        
 
 
 
@@ -130,20 +131,22 @@ type clipH()=
     let mutable currCapacity=0
     let mutable currSelected=0
     
+    
     let Updater=new ClipboardAux()
     let clear ()=
         applist.Clear()
         currCapacity<-0
-    
-    do Updater.ClipboardChanged.Add(fun _->
+
+    let Update ()=
         if Clipboard.ContainsText() then
-            let tmpSTr=Clipboard.GetText()
-            let alt=tmpSTr.Split('\n').Length
-            let appstrT=new appunto(STR=tmpSTr,Location=PointF(10.f , single currCapacity*15.f),TIPO=0)
-            applist |> Seq.iter (fun b-> b.Selected<-false)
-            applist.Add(appstrT)
-            currSelected<-1
-            currCapacity<-currCapacity+alt
+                let tmpSTr=Clipboard.GetText()
+                let alt=tmpSTr.Split('\n').Length
+                let appstrT=new appunto(STR=tmpSTr,Location=PointF(10.f , single currCapacity*15.f),TIPO=0)
+                
+                applist |> Seq.iter (fun b-> b.Selected<-false)
+                applist.Add(appstrT)
+                currSelected<-1
+                currCapacity<-currCapacity+alt
         else
          if Clipboard.ContainsFileDropList() then
             
@@ -159,20 +162,43 @@ type clipH()=
                 currSelected<-1
                 currCapacity<-currCapacity+1
                 h<-h+1
-            
-        )
+        
+    let mutable x= Updater.ClipboardChanged.Subscribe (fun e->
+                Update()
+                )
     let shiftdown () =
         
         if currSelected>0 then
             if applist.Count>currSelected then
+                x.Dispose()
                 applist |> Seq.iter (fun b-> b.Selected<-false)
+                let tmpSel=applist.[applist.Count-currSelected-1]
                 applist.[applist.Count-currSelected-1].Selected<-true
                 
+                Clipboard.Clear()
+                match tmpSel.TIPO with
+                    |0->Clipboard.SetText(tmpSel.STR)
+                    |_->()
+                x<- Updater.ClipboardChanged.Subscribe (fun e->
+                    Update()
+                )
                 currSelected<-currSelected+1
     let shiftup () =
+        
         if currSelected>1  then
+            x.Dispose()
             applist |> Seq.iter (fun b-> b.Selected<-false)
+            let tmpSel=applist.[applist.Count-currSelected+1]
             applist.[applist.Count-currSelected+1].Selected<-true
+            
+
+            Clipboard.Clear()
+            match tmpSel.TIPO with
+                    |0->Clipboard.SetText(tmpSel.STR)
+                    |_->()
+            x<- Updater.ClipboardChanged.Subscribe (fun e->
+                    Update()
+                )
             currSelected<-currSelected-1
             
 
@@ -242,7 +268,7 @@ type ed() as this=
     override this.OnPaint e=
               e.Graphics.Transform<-w2v
               aaa.Paint e.Graphics
-
+    
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 let n=new ed(Dock=DockStyle.Fill)
 f.Controls.Add(n)
