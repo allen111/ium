@@ -77,22 +77,30 @@ type appunto()=
     let mutable altezza=1
     let fnt=new Font(FontFamily.GenericSansSerif,11.f)
     let mutable sizedString=str
+    let mutable selected=true
+    let mutable bru=Brushes.Black
     let sizing ()=
         if str.Length>30 then
             sizedString<-str.Substring(0,30)+"..."
         else
             sizedString<-str
+        altezza<-sizedString.Split('\n').Length + 1
     (*
         tipi
             0->text
             1->img file
             2->filepath group
-            3->image(bitmap)
+            3->image(bitmap) screenshot
     *)
 
     let paint (g:Graphics)(p:PointF)=
         match tipo with 
-            |0->g.DrawString(sizedString,fnt,Brushes.Black,p)
+            |0->
+                if selected then
+                    bru<-Brushes.Red
+                else
+                    bru<-Brushes.Black
+                g.DrawString(sizedString,fnt,bru,p)
             |1->()
             |2->g.DrawString(str,fnt,Brushes.Black,p)
             |_->()
@@ -113,7 +121,9 @@ type appunto()=
     member this.Path
         with get()=path
         and set(v)=path<-v
-   
+    member this.Selected
+        with get()=selected
+        and set(v)=selected<-v
 //===========================================================================
 type clipH()=
     let mutable applist=new List<appunto>()
@@ -129,7 +139,8 @@ type clipH()=
         if Clipboard.ContainsText() then
             let tmpSTr=Clipboard.GetText()
             let alt=tmpSTr.Split('\n').Length
-            let appstrT=new appunto(STR=tmpSTr,Location=PointF(10.f , single currCapacity*15.f),TIPO=0,Altezza=alt)
+            let appstrT=new appunto(STR=tmpSTr,Location=PointF(10.f , single currCapacity*15.f),TIPO=0)
+            applist |> Seq.iter (fun b-> b.Selected<-false)
             applist.Add(appstrT)
             currCapacity<-currCapacity+alt
         else
@@ -214,3 +225,11 @@ f.Controls.Add(n)
 f.TopMost<-true
 f.Invalidate()
 n.Focus()
+
+
+
+
+
+
+
+
