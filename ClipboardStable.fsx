@@ -128,6 +128,7 @@ type clipH()=
     let mutable applist=new List<appunto>()
     let mutable maxCapacity=10
     let mutable currCapacity=0
+    let mutable currSelected=0
     
     let Updater=new ClipboardAux()
     let clear ()=
@@ -141,6 +142,7 @@ type clipH()=
             let appstrT=new appunto(STR=tmpSTr,Location=PointF(10.f , single currCapacity*15.f),TIPO=0)
             applist |> Seq.iter (fun b-> b.Selected<-false)
             applist.Add(appstrT)
+            currSelected<-1
             currCapacity<-currCapacity+alt
         else
          if Clipboard.ContainsFileDropList() then
@@ -154,11 +156,26 @@ type clipH()=
                 let tmpb=tmpBs.[tmpBs.Length-1]
                 let appFDT=new appunto(STR=tmpb,Path=a.Current,Location=PointF(10.f , single (currCapacity)*15.f),TIPO=2,Altezza=1,Selected=true)
                 applist.Add(appFDT)
+                currSelected<-1
                 currCapacity<-currCapacity+1
                 h<-h+1
             
         )
-    
+    let shiftdown () =
+        
+        if currSelected>0 then
+            if applist.Count>currSelected then
+                applist |> Seq.iter (fun b-> b.Selected<-false)
+                applist.[applist.Count-currSelected-1].Selected<-true
+                
+                currSelected<-currSelected+1
+    let shiftup () =
+        if currSelected>1  then
+            applist |> Seq.iter (fun b-> b.Selected<-false)
+            applist.[applist.Count-currSelected+1].Selected<-true
+            currSelected<-currSelected-1
+            
+
     let paint (g:Graphics)=
         let len=applist.Count 
         let mutable pt=PointF(10.f,10.f)
@@ -171,9 +188,11 @@ type clipH()=
 //            )
     
 
+
     member this.Paint = paint
     member this.Clear=clear
-
+    member this.ShiftDown=shiftdown
+    member this.ShiftUp=shiftup
 //===========================================================================
 
 type ed() as this=
@@ -195,17 +214,15 @@ type ed() as this=
     do this.SetStyle(ControlStyles.AllPaintingInWmPaint 
                      ||| ControlStyles.OptimizedDoubleBuffer, true)
 
-    let b=new Button(Text="clear",Left=f.Width-100,Top=20,Width=100,Height=20)
-    do this.Controls.Add(b)
-    
+//    let b=new Button(Text="clear",Left=f.Width-100,Top=20,Width=100,Height=20)
+//    do this.Controls.Add(b)
+//    
     let aaa= new clipH()
-    do b.Click.Add(fun _->aaa.Clear();Clipboard.Clear();w2v<- new Drawing2D.Matrix();v2w <- new Drawing2D.Matrix())
+    //do b.Click.Add(fun _->aaa.Clear();Clipboard.Clear();w2v<- new Drawing2D.Matrix();v2w <- new Drawing2D.Matrix())
 
     let t= new Timer(Interval=1)
     do t.Tick.Add(fun _->this.Invalidate())
     do t.Start()
-
-    
 
     override this.OnMouseWheel  e=
         //scroll base 
@@ -214,6 +231,13 @@ type ed() as this=
         else
             translateW(0.f,-15.f)
 
+    override this.OnKeyDown e=
+        
+        
+        match e.KeyCode with
+            |Keys.S->aaa.ShiftDown()
+            |Keys.W->aaa.ShiftUp()
+            |_->()
 
     override this.OnPaint e=
               e.Graphics.Transform<-w2v
