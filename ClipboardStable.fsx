@@ -106,8 +106,8 @@ type appunto()=
             |2->g.DrawString(str,fnt,bru,p)
             |3->
                 if selected then
-                    g.DrawRectangle(Pens.Red,Rectangle(int p.X-1, int p.Y-1,101,101))
-                g.DrawImage(img,Rectangle(int p.X, int p.Y,100,100))
+                    g.DrawRectangle(Pens.Red,Rectangle(int p.X-1, int p.Y-1,121,101))
+                g.DrawImage(img,Rectangle(int p.X, int p.Y,120,100))
             |_->()
 
     member this.Paint=paint
@@ -139,7 +139,7 @@ type clipH()=
     let mutable currCapacity=0
     let mutable currSelected=0
     
-    
+    let evtUpd=new Event<System.EventArgs>()
     let Updater=new ClipboardAux()
     let clear ()=
         applist.Clear()
@@ -153,6 +153,7 @@ type clipH()=
                 
                 applist |> Seq.iter (fun b-> b.Selected<-false)
                 applist.Add(appstrT)
+                evtUpd.Trigger(null)
                 currSelected<-1
                 currCapacity<-currCapacity+alt
         else
@@ -167,6 +168,7 @@ type clipH()=
                 let tmpb=tmpBs.[tmpBs.Length-1]
                 let appFDT=new appunto(STR=tmpb,Path=a.Current,Location=PointF(10.f , single (currCapacity)*15.f),TIPO=2,Altezza=1,Selected=true)
                 applist.Add(appFDT)
+                evtUpd.Trigger(null)
                 currSelected<-1
                 currCapacity<-currCapacity+1
                 h<-h+1
@@ -176,6 +178,7 @@ type clipH()=
                 applist |> Seq.iter (fun b-> b.Selected<-false)
                 let appIMG=new appunto(Img=tmpIMG,Altezza=8,Selected=true,TIPO=3)
                 applist.Add(appIMG)
+                evtUpd.Trigger(null)
                 currSelected<-1
                 currCapacity<-currCapacity+1
                 
@@ -184,14 +187,14 @@ type clipH()=
                 Update()
                 )
     let shiftdown () =
-        
+        let mutable tmpA=None
         if currSelected>0 then
             if applist.Count>currSelected then
                 x.Dispose()
                 applist |> Seq.iter (fun b-> b.Selected<-false)
                 let tmpSel=applist.[applist.Count-currSelected-1]
                 applist.[applist.Count-currSelected-1].Selected<-true
-                
+                tmpA<-Some tmpSel
                 Clipboard.Clear()
                 match tmpSel.TIPO with
                     |0->Clipboard.SetText(tmpSel.STR)
@@ -201,14 +204,17 @@ type clipH()=
                     Update()
                 )
                 currSelected<-currSelected+1
+        tmpA
+
+
     let shiftup () =
-        
+        let mutable tmpA=None
         if currSelected>1  then
             x.Dispose()
             applist |> Seq.iter (fun b-> b.Selected<-false)
             let tmpSel=applist.[applist.Count-currSelected+1]
             applist.[applist.Count-currSelected+1].Selected<-true
-            
+            tmpA<-Some tmpSel
 
             Clipboard.Clear()
             match tmpSel.TIPO with
@@ -219,6 +225,7 @@ type clipH()=
                     Update()
                 )
             currSelected<-currSelected-1
+        tmpA
             
 
     let paint (g:Graphics)=
@@ -226,6 +233,7 @@ type clipH()=
         let mutable pt=PointF(10.f,10.f)
         for b in len-1 .. -1 .. 0 do
             applist.[b].Paint g pt
+            applist.[b].Location<-pt
             pt<- PointF(10.f,pt.Y+single(applist.[b].Altezza)*15.f)
     
 
@@ -235,31 +243,52 @@ type clipH()=
     member this.ShiftDown=shiftdown
     member this.ShiftUp=shiftup
     member this.Aux=Updater
+    member this.UpdateEvt=evtUpd.Publish
 //===========================================================================
 
 type ed() as this=
     inherit UserControl()
+    do this.SetStyle(ControlStyles.AllPaintingInWmPaint 
+                     ||| ControlStyles.OptimizedDoubleBuffer, true)
     let mutable w2v = new Drawing2D.Matrix()
     let mutable v2w = new Drawing2D.Matrix()
-    
+    let aaa= new clipH()
+
     let transformP (m:Drawing2D.Matrix) (p:Point) =
         let a = [| PointF(single p.X, single p.Y) |]
         m.TransformPoints(a)
         a.[0]
   
-    
     let translateW (tx, ty) =
         w2v.Translate(tx, ty)
         v2w.Translate(-tx, -ty, Drawing2D.MatrixOrder.Append)
-    
-    
-    do this.SetStyle(ControlStyles.AllPaintingInWmPaint 
-                     ||| ControlStyles.OptimizedDoubleBuffer, true)
 
+    let transformP (m:Drawing2D.Matrix) (p:PointF) =
+        let a = [| PointF(single p.X, single p.Y) |]
+        m.TransformPoints(a)
+        a.[0]
+    
+
+
+    do aaa.UpdateEvt.Add(fun _->w2v<-new Drawing2D.Matrix();v2w<-new Drawing2D.Matrix()) 
+    let scrool (app:appunto)=
+        let tmpP=transformP w2v app.Location
+        
+        
+
+        if app.TIPO=3 && tmpP.Y+100.f> single this.Height then
+            let h=tmpP.Y+90.f- single this.Height
+            printfn"%A" h
+            translateW(0.f,-h)
+        if app.TIPO=3 && tmpP.Y<20.f then
+            let h=Math.Abs(tmpP.Y)+10.f
+            translateW(0.f,h)
+
+  
+    
 //    let b=new Button(Text="clear",Left=f.Width-100,Top=20,Width=100,Height=20)
 //    do this.Controls.Add(b)
-//    
-    let aaa= new clipH()
+//  
     //do b.Click.Add(fun _->aaa.Clear();Clipboard.Clear();w2v<- new Drawing2D.Matrix();v2w <- new Drawing2D.Matrix())
 
     let t= new Timer(Interval=1)
@@ -277,8 +306,14 @@ type ed() as this=
         
         
         match e.KeyCode with
-            |Keys.S->aaa.ShiftDown()
-            |Keys.W->aaa.ShiftUp()
+            |Keys.S->
+                let x=(aaa.ShiftDown())
+                if x.IsSome then
+                    scrool x.Value    
+            |Keys.W->
+                let x=(aaa.ShiftUp())
+                if x.IsSome then
+                    scrool x.Value    
             |_->()
 
     override this.OnPaint e=
