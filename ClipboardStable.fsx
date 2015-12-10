@@ -271,16 +271,20 @@ type ed() as this=
 
 
     do aaa.UpdateEvt.Add(fun _->w2v<-new Drawing2D.Matrix();v2w<-new Drawing2D.Matrix()) 
+    
     let scrool (app:appunto)=
         let tmpP=transformP w2v app.Location
         
-        
-
         if app.TIPO=3 && tmpP.Y+100.f> single this.Height then
             let h=tmpP.Y+90.f- single this.Height
-            printfn"%A" h
             translateW(0.f,-h)
         if app.TIPO=3 && tmpP.Y<20.f then
+            let h=Math.Abs(tmpP.Y)+10.f
+            translateW(0.f,h)
+        if app.TIPO=0 &&  tmpP.Y+15.f> single this.Height then
+            let h= tmpP.Y+single (app.Altezza*15) - single this.Height
+            translateW(0.f,-h)
+        if app.TIPO=0 && tmpP.Y<15.f then
             let h=Math.Abs(tmpP.Y)+10.f
             translateW(0.f,h)
 
