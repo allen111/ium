@@ -73,6 +73,7 @@ type ClipboardAux()as this=
 type appunto()=
     let mutable str=""
     let mutable tipo= -1
+    let mutable img=null
     let mutable path=""
     let mutable location=PointF()
     let mutable altezza=1
@@ -103,6 +104,10 @@ type appunto()=
             |0->g.DrawString(sizedString,fnt,bru,p)
             |1->()
             |2->g.DrawString(str,fnt,bru,p)
+            |3->
+                if selected then
+                    g.DrawRectangle(Pens.Red,Rectangle(int p.X-1, int p.Y-1,101,101))
+                g.DrawImage(img,Rectangle(int p.X, int p.Y,100,100))
             |_->()
 
     member this.Paint=paint
@@ -124,6 +129,9 @@ type appunto()=
     member this.Selected
         with get()=selected
         and set(v)=selected<-v
+    member this.Img
+        with get()=img
+        and set(v)=img<-v
 //===========================================================================
 type clipH()=
     let mutable applist=new List<appunto>()
@@ -162,7 +170,16 @@ type clipH()=
                 currSelected<-1
                 currCapacity<-currCapacity+1
                 h<-h+1
-        
+         else
+            if Clipboard.ContainsImage() then
+                let tmpIMG=Clipboard.GetImage()
+                applist |> Seq.iter (fun b-> b.Selected<-false)
+                let appIMG=new appunto(Img=tmpIMG,Altezza=8,Selected=true,TIPO=3)
+                applist.Add(appIMG)
+                currSelected<-1
+                currCapacity<-currCapacity+1
+                
+
     let mutable x= Updater.ClipboardChanged.Subscribe (fun e->
                 Update()
                 )
@@ -178,6 +195,7 @@ type clipH()=
                 Clipboard.Clear()
                 match tmpSel.TIPO with
                     |0->Clipboard.SetText(tmpSel.STR)
+                    |3->Clipboard.SetImage(tmpSel.Img)
                     |_->()
                 x<- Updater.ClipboardChanged.Subscribe (fun e->
                     Update()
@@ -195,6 +213,7 @@ type clipH()=
             Clipboard.Clear()
             match tmpSel.TIPO with
                     |0->Clipboard.SetText(tmpSel.STR)
+                    |3->Clipboard.SetImage(tmpSel.Img)
                     |_->()
             x<- Updater.ClipboardChanged.Subscribe (fun e->
                     Update()
@@ -208,10 +227,6 @@ type clipH()=
         for b in len-1 .. -1 .. 0 do
             applist.[b].Paint g pt
             pt<- PointF(10.f,pt.Y+single(applist.[b].Altezza)*15.f)
-            
-//        applist |> Seq.iter (fun b->
-//            b.Paint g
-//            )
     
 
 
@@ -219,6 +234,7 @@ type clipH()=
     member this.Clear=clear
     member this.ShiftDown=shiftdown
     member this.ShiftUp=shiftup
+    member this.Aux=Updater
 //===========================================================================
 
 type ed() as this=
@@ -231,7 +247,7 @@ type ed() as this=
         m.TransformPoints(a)
         a.[0]
   
-
+    
     let translateW (tx, ty) =
         w2v.Translate(tx, ty)
         v2w.Translate(-tx, -ty, Drawing2D.MatrixOrder.Append)
@@ -249,7 +265,7 @@ type ed() as this=
     let t= new Timer(Interval=1)
     do t.Tick.Add(fun _->this.Invalidate())
     do t.Start()
-
+    
     override this.OnMouseWheel  e=
         //scroll base 
         if e.Delta>0 then
@@ -275,3 +291,7 @@ f.Controls.Add(n)
 f.TopMost<-true
 f.Invalidate()
 n.Focus()
+
+
+
+
