@@ -27,6 +27,7 @@ f.Show()
 type ClipboardChangedEventArgs ()=
      let a=2
      //nel caso mettici qualcosa
+
 //nuovo aggiornamento migliorato e sticazzi
 type ClipboardAux()as this=
     inherit Form()
@@ -70,6 +71,34 @@ type ClipboardAux()as this=
 //====================================================================================================================================
 //------------------------------------------------------------------------------------------------------------------------------------
 
+type btn()=
+    let mutable rect=Rectangle()
+    let mutable region= new Region(rect)
+    let mutable str="def"
+    let fnt=new Font(FontFamily.GenericSansSerif,13.f)
+    let clickDown=new Event<System.EventArgs>()
+    let check(p:Point)=
+        if region.IsVisible(p) then
+            clickDown.Trigger(null)        
+            true
+        else
+            false
+    let paint (g:Graphics)=
+        g.FillRectangle(Brushes.Blue,rect)
+        g.DrawString(str,fnt,Brushes.Black,PointF(single rect.Left, single rect.Top))
+
+    member this.Click=clickDown.Publish
+    member this.Rectangle
+        with get()=rect
+        and set(v)=rect<-v;region<- new Region(rect)
+    member this.String
+        with get()=str
+        and set(v)=str<-v   
+    member this.Paint=paint
+    member this.Check=check
+
+
+//************************************************************************************************************************************
 type appunto()=
     let mutable str=""
     let mutable tipo= -1
@@ -268,8 +297,7 @@ type ed() as this=
         m.TransformPoints(a)
         a.[0]
     
-
-
+    
     do aaa.UpdateEvt.Add(fun _->w2v<-new Drawing2D.Matrix();v2w<-new Drawing2D.Matrix()) 
     
     let scrool (app:appunto)=
@@ -306,6 +334,8 @@ type ed() as this=
         else
             translateW(0.f,-15.f)
 
+    
+
     override this.OnKeyDown e=
         
         
@@ -321,8 +351,10 @@ type ed() as this=
             |_->()
 
     override this.OnPaint e=
+              
               e.Graphics.Transform<-w2v
               aaa.Paint e.Graphics
+              
     
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 let n=new ed(Dock=DockStyle.Fill)
@@ -330,6 +362,8 @@ f.Controls.Add(n)
 f.TopMost<-true
 f.Invalidate()
 n.Focus()
+
+
 
 
 
