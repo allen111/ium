@@ -20,7 +20,7 @@ module climod =
   
 
 
-let f= new Form(TopMost=true)
+let f= new Form(TopMost=true,Width=800,Height=600)
 f.Show()
 
 
@@ -80,9 +80,7 @@ type btn()=
     let check(p:Point)=
         if region.IsVisible(p) then
             clickDown.Trigger(null)        
-            true
-        else
-            false
+            
     let paint (g:Graphics)=
         g.FillRectangle(Brushes.Blue,rect)
         g.DrawString(str,fnt,Brushes.Black,PointF(single rect.Left, single rect.Top))
@@ -281,7 +279,7 @@ type ed() as this=
                      ||| ControlStyles.OptimizedDoubleBuffer, true)
     let mutable w2v = new Drawing2D.Matrix()
     let mutable v2w = new Drawing2D.Matrix()
-    let aaa= new clipH()
+    let  aaa= new clipH()
 
     let transformP (m:Drawing2D.Matrix) (p:Point) =
         let a = [| PointF(single p.X, single p.Y) |]
@@ -343,7 +341,8 @@ type ed() as this=
             |Keys.S->
                 let x=(aaa.ShiftDown())
                 if x.IsSome then
-                    scrool x.Value    
+                    scrool x.Value
+
             |Keys.W->
                 let x=(aaa.ShiftUp())
                 if x.IsSome then
@@ -356,15 +355,31 @@ type ed() as this=
               aaa.Paint e.Graphics
               
     
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+type ButtonContainer()=
+    inherit UserControl()
+    let buttons= new ResizeArray<btn>()
+    let bt1=new btn(Rectangle=Rectangle(0,0,50,30),String="bottone")
+    let bt2=new btn(Rectangle=Rectangle(51,0,50,30),String="hello1")
+    do buttons.Add(bt1);buttons.Add(bt2)
+    do bt1.Click.Add(fun _-> (printfn"1" ))
+    do bt2.Click.Add(fun _-> (printfn"2" ))
+    override this.OnMouseUp e=
+        buttons |> Seq.iter (fun b->
+            b.Check e.Location
+            )
+    override this.OnPaint e=
+        buttons |> Seq.iter (fun b->
+            b.Paint e.Graphics 
+            )
+     
+//3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333
 let n=new ed(Dock=DockStyle.Fill)
 f.Controls.Add(n)
+let n1=new ButtonContainer(Dock=DockStyle.Bottom,AutoSize=false,Height=30,BackColor=Color.Cyan)
+f.Controls.Add(n1)
 f.TopMost<-true
 f.Invalidate()
 n.Focus()
-
-
-
-
 
 
