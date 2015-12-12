@@ -97,6 +97,29 @@ type btn()=
 
 
 //************************************************************************************************************************************
+
+type ButtonContainer()=
+    inherit UserControl()
+    let mutable buttons= new ResizeArray<btn>()
+    let bt1=new btn(Rectangle=Rectangle(0,0,50,30),String="giu")
+    let bt2=new btn(Rectangle=Rectangle(51,0,50,30),String="su")
+    let bt3=new btn(Rectangle=Rectangle(102,0,50,30),String="clear")
+    do buttons.Add(bt1);buttons.Add(bt2);buttons.Add(bt3)
+    do bt1.Click.Add(fun _-> (printfn"1" ))
+    do bt2.Click.Add(fun _-> (printfn"2" ))
+    do bt3.Click.Add(fun _-> (printfn"3" ))
+    override this.OnMouseUp e=
+        buttons |> Seq.iter (fun b->
+            b.Check e.Location
+            )
+    override this.OnPaint e=
+        buttons |> Seq.iter (fun b->
+            b.Paint e.Graphics 
+            )
+    member this.Buttons
+        with get()=buttons
+        and set(v)=buttons<-v
+//3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333
 type appunto()=
     let mutable str=""
     let mutable tipo= -1
@@ -297,6 +320,9 @@ type ed() as this=
     
     
     do aaa.UpdateEvt.Add(fun _->w2v<-new Drawing2D.Matrix();v2w<-new Drawing2D.Matrix()) 
+    let n1=new ButtonContainer(Dock=DockStyle.Bottom,AutoSize=false,Height=30,BackColor=Color.Cyan)
+    do this.Controls.Add(n1)
+    
     
     let scrool (app:appunto)=
         let tmpP=transformP w2v app.Location
@@ -308,14 +334,30 @@ type ed() as this=
             let h=Math.Abs(tmpP.Y)+10.f
             translateW(0.f,h)
         if app.TIPO=0 &&  tmpP.Y+15.f> single this.Height then
-            let h= tmpP.Y+single (app.Altezza*15) - single this.Height
+            let h= tmpP.Y - 20.f + single (app.Altezza*15) - single this.Height
             translateW(0.f,-h)
         if app.TIPO=0 && tmpP.Y<15.f then
             let h=Math.Abs(tmpP.Y)+10.f
             translateW(0.f,h)
 
   
-    
+    do n1.Buttons.[0].Click.Add(fun b-> 
+        let x=(aaa.ShiftDown())
+        if x.IsSome then
+          scrool x.Value
+        )
+    do n1.Buttons.[1].Click.Add(fun b-> 
+        let x=(aaa.ShiftUp())
+        if x.IsSome then
+           scrool x.Value 
+        )
+
+    do n1.Buttons.[2].Click.Add(fun b->
+        aaa.Clear()
+        Clipboard.Clear()
+        w2v<- new Drawing2D.Matrix()
+        v2w <- new Drawing2D.Matrix()
+        )
 //    let b=new Button(Text="clear",Left=f.Width-100,Top=20,Width=100,Height=20)
 //    do this.Controls.Add(b)
 //  
@@ -353,31 +395,14 @@ type ed() as this=
               
               e.Graphics.Transform<-w2v
               aaa.Paint e.Graphics
+
               
     
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-type ButtonContainer()=
-    inherit UserControl()
-    let buttons= new ResizeArray<btn>()
-    let bt1=new btn(Rectangle=Rectangle(0,0,50,30),String="bottone")
-    let bt2=new btn(Rectangle=Rectangle(51,0,50,30),String="hello1")
-    do buttons.Add(bt1);buttons.Add(bt2)
-    do bt1.Click.Add(fun _-> (printfn"1" ))
-    do bt2.Click.Add(fun _-> (printfn"2" ))
-    override this.OnMouseUp e=
-        buttons |> Seq.iter (fun b->
-            b.Check e.Location
-            )
-    override this.OnPaint e=
-        buttons |> Seq.iter (fun b->
-            b.Paint e.Graphics 
-            )
-     
-//3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333
+
 let n=new ed(Dock=DockStyle.Fill)
 f.Controls.Add(n)
-let n1=new ButtonContainer(Dock=DockStyle.Bottom,AutoSize=false,Height=30,BackColor=Color.Cyan)
-f.Controls.Add(n1)
+
 f.TopMost<-true
 f.Invalidate()
 n.Focus()
