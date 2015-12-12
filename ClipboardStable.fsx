@@ -376,8 +376,11 @@ type ed() as this=
     do n1.Buttons.[3].Click.Add(fun b->
         if Clipboard.ContainsText() then    
             let mutable string=Clipboard.GetText()
+            let mutable h=string.Split('\n').Length+1
+            
             let f2= new Form(Text="EditBox",TopMost=true)
             let editT=new TextBox(Text=string,Dock=DockStyle.Top,Multiline=true)//mutliline pls
+            editT.Height<-h*editT.Font.Height
             let btalpha=new Button(Text="Done",Dock=DockStyle.Top)
             f2.Controls.Add(btalpha)
             f2.Controls.Add(editT)
