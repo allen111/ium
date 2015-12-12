@@ -20,7 +20,7 @@ module climod =
   
 
 
-let f= new Form(TopMost=true,Width=800,Height=600)
+let f= new Form(TopMost=true,Width=300,Height=500)
 f.Show()
 
 
@@ -94,20 +94,24 @@ type btn()=
         and set(v)=str<-v   
     member this.Paint=paint
     member this.Check=check
+    member this.ClickT=clickDown.Trigger
 
 
 //************************************************************************************************************************************
 
-type ButtonContainer()=
+type ButtonContainer()as this=
     inherit UserControl()
     let mutable buttons= new ResizeArray<btn>()
     let bt1=new btn(Rectangle=Rectangle(0,0,50,30),String="giu")
     let bt2=new btn(Rectangle=Rectangle(51,0,50,30),String="su")
     let bt3=new btn(Rectangle=Rectangle(102,0,50,30),String="clear")
-    do buttons.Add(bt1);buttons.Add(bt2);buttons.Add(bt3)
+    let bt4=new btn(Rectangle=Rectangle(153,0,50,30),String="edit")
+    do buttons.Add(bt1);buttons.Add(bt2);buttons.Add(bt3);buttons.Add(bt4)
     do bt1.Click.Add(fun _-> (printfn"1" ))
     do bt2.Click.Add(fun _-> (printfn"2" ))
     do bt3.Click.Add(fun _-> (printfn"3" ))
+    do bt4.Click.Add(fun _-> (printfn"4" ))
+    
     override this.OnMouseUp e=
         buttons |> Seq.iter (fun b->
             b.Check e.Location
@@ -116,6 +120,11 @@ type ButtonContainer()=
         buttons |> Seq.iter (fun b->
             b.Paint e.Graphics 
             )
+    override this.OnKeyDown e=
+        match e.KeyCode with
+            |Keys.S->bt1.ClickT(null)
+            |Keys.W->bt2.ClickT(null)
+            |_->()
     member this.Buttons
         with get()=buttons
         and set(v)=buttons<-v
@@ -193,6 +202,7 @@ type clipH()=
     let Updater=new ClipboardAux()
     let clear ()=
         applist.Clear()
+        Clipboard.Clear()
         currCapacity<-0
 
     let Update ()=
@@ -203,6 +213,7 @@ type clipH()=
                 
                 applist |> Seq.iter (fun b-> b.Selected<-false)
                 applist.Add(appstrT)
+                 
                 evtUpd.Trigger(null)
                 currSelected<-1
                 currCapacity<-currCapacity+alt
@@ -245,7 +256,7 @@ type clipH()=
                 let tmpSel=applist.[applist.Count-currSelected-1]
                 applist.[applist.Count-currSelected-1].Selected<-true
                 tmpA<-Some tmpSel
-                Clipboard.Clear()
+                
                 match tmpSel.TIPO with
                     |0->Clipboard.SetText(tmpSel.STR)
                     |3->Clipboard.SetImage(tmpSel.Img)
@@ -266,7 +277,7 @@ type clipH()=
             applist.[applist.Count-currSelected+1].Selected<-true
             tmpA<-Some tmpSel
 
-            Clipboard.Clear()
+            
             match tmpSel.TIPO with
                     |0->Clipboard.SetText(tmpSel.STR)
                     |3->Clipboard.SetImage(tmpSel.Img)
@@ -294,12 +305,13 @@ type clipH()=
     member this.ShiftUp=shiftup
     member this.Aux=Updater
     member this.UpdateEvt=evtUpd.Publish
-//===========================================================================
+//================================================================================================================================
 
 type ed() as this=
     inherit UserControl()
     do this.SetStyle(ControlStyles.AllPaintingInWmPaint 
                      ||| ControlStyles.OptimizedDoubleBuffer, true)
+    do printfn"%A" (this.CanSelect)
     let mutable w2v = new Drawing2D.Matrix()
     let mutable v2w = new Drawing2D.Matrix()
     let  aaa= new clipH()
@@ -333,8 +345,8 @@ type ed() as this=
         if app.TIPO=3 && tmpP.Y<20.f then
             let h=Math.Abs(tmpP.Y)+10.f
             translateW(0.f,h)
-        if app.TIPO=0 &&  tmpP.Y+15.f> single this.Height then
-            let h= tmpP.Y - 20.f + single (app.Altezza*15) - single this.Height
+        if app.TIPO=0 &&  tmpP.Y+15.f> (single this.Height) - 20.f then
+            let h= tmpP.Y + 20.f + single (app.Altezza*15) - single this.Height
             translateW(0.f,-h)
         if app.TIPO=0 && tmpP.Y<15.f then
             let h=Math.Abs(tmpP.Y)+10.f
@@ -345,23 +357,34 @@ type ed() as this=
         let x=(aaa.ShiftDown())
         if x.IsSome then
           scrool x.Value
+        
         )
     do n1.Buttons.[1].Click.Add(fun b-> 
         let x=(aaa.ShiftUp())
         if x.IsSome then
            scrool x.Value 
+        
         )
 
     do n1.Buttons.[2].Click.Add(fun b->
         aaa.Clear()
-        Clipboard.Clear()
+        
         w2v<- new Drawing2D.Matrix()
         v2w <- new Drawing2D.Matrix()
         )
-//    let b=new Button(Text="clear",Left=f.Width-100,Top=20,Width=100,Height=20)
-//    do this.Controls.Add(b)
-//  
-    //do b.Click.Add(fun _->aaa.Clear();Clipboard.Clear();w2v<- new Drawing2D.Matrix();v2w <- new Drawing2D.Matrix())
+
+    do n1.Buttons.[3].Click.Add(fun b->
+        if Clipboard.ContainsText() then    
+            let mutable string=Clipboard.GetText()
+            let f2= new Form(Text="EditBox",TopMost=true)
+            let editT=new TextBox(Text=string,Dock=DockStyle.Top,Multiline=true)//mutliline pls
+            let btalpha=new Button(Text="Done",Dock=DockStyle.Top)
+            f2.Controls.Add(btalpha)
+            f2.Controls.Add(editT)
+            f2.Show()
+            btalpha.Click.Add(fun e->editT.SelectAll();editT.Copy();f2.Close())//unico modo con SetText lo fa 2 volte booh
+        )
+
 
     let t= new Timer(Interval=1)
     do t.Tick.Add(fun _->this.Invalidate())
