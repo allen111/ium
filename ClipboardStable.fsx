@@ -144,6 +144,14 @@ type appunto()=
     let mutable sizedString=str
     let mutable selected=true
     let mutable bru=Brushes.Black
+
+    let mutable reg=new Region()
+    let regRes(pf:PointF)=
+        match tipo with
+            |0->reg<-new Region(Rectangle(int location.X,int location.Y,f.ClientSize.Width-10,(altezza*15)-5))
+            |3->reg<-new Region(Rectangle(int location.X,int location.Y,f.ClientSize.Width-10,102))
+            |_->()
+
     let sizing ()=
         if str.Length>30 then
             sizedString<-str.Substring(0,30)+"..."
@@ -164,10 +172,11 @@ type appunto()=
                 else
                     bru<-Brushes.Black
         match tipo with 
-            |0->g.DrawString(sizedString,fnt,bru,p)
+            |0->g.FillRegion(Brushes.Aqua,reg);g.DrawString(sizedString,fnt,bru,location);
             |1->()
             |2->g.DrawString(str,fnt,bru,p)
             |3->
+                g.FillRegion(Brushes.Aqua,reg)
                 if selected then
                     g.DrawRectangle(Pens.Red,Rectangle(int p.X-1, int p.Y-1,121,101))
                 g.DrawImage(img,Rectangle(int p.X, int p.Y,120,100))
@@ -179,7 +188,7 @@ type appunto()=
         and set(v)=str<-v;sizing()
     member this.Location
         with get()=location
-        and set(v)=location<-v
+        and set(v)=location<-v;regRes(v)
     member this.Altezza
         with get()=altezza
         and set(v)=altezza<-v
@@ -195,6 +204,8 @@ type appunto()=
     member this.Img
         with get()=img
         and set(v)=img<-v
+    member this.Reg
+        with get()=reg
 //===========================================================================
 type clipH()=
     let mutable applist=new List<appunto>()
@@ -251,6 +262,27 @@ type clipH()=
     let mutable x= Updater.ClipboardChanged.Subscribe (fun e->
                 Update()
                 )
+
+    let selecting (p:Point)=
+        applist|>Seq.iteri (fun i b->
+            if b.Reg.IsVisible(p) then
+                x.Dispose()
+                applist |> Seq.iter (fun b-> b.Selected<-false)
+                b.Selected<-true
+                match b.TIPO with
+                    |0->Clipboard.SetText(b.STR)
+                    |3->Clipboard.SetImage(b.Img)
+                    |_->()
+                x<- Updater.ClipboardChanged.Subscribe (fun e->
+                    Update()
+                )
+                currSelected<-applist.Count-i
+            )
+
+
+
+
+
     let shiftdown () =
         let mutable tmpA=None
         if currSelected>0 then
@@ -297,8 +329,8 @@ type clipH()=
         let len=applist.Count 
         let mutable pt=PointF(10.f,10.f)
         for b in len-1 .. -1 .. 0 do
-            applist.[b].Paint g pt
             applist.[b].Location<-pt
+            applist.[b].Paint g pt
             pt<- PointF(10.f,pt.Y+single(applist.[b].Altezza)*15.f)
     
 
@@ -309,6 +341,7 @@ type clipH()=
     member this.ShiftUp=shiftup
     member this.Aux=Updater
     member this.UpdateEvt=evtUpd.Publish
+    member this.Selecting=selecting
 //================================================================================================================================
 
 type ed() as this=
@@ -320,8 +353,8 @@ type ed() as this=
     let mutable v2w = new Drawing2D.Matrix()
     let  aaa= new clipH()
 
-    let transformP (m:Drawing2D.Matrix) (p:Point) =
-        let a = [| PointF(single p.X, single p.Y) |]
+    let transformPt (m:Drawing2D.Matrix) (p:Point) =
+        let a = [| Point( p.X,  p.Y) |]
         m.TransformPoints(a)
         a.[0]
   
@@ -420,6 +453,11 @@ type ed() as this=
             translateW(0.f,-15.f)
 
     
+    override this.OnMouseUp e=
+        let l= transformPt v2w e.Location
+        aaa.Selecting l
+
+
 
     override this.OnKeyDown e=
         
