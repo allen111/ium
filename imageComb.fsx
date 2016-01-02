@@ -87,8 +87,7 @@ type ImageCombinator()as this=
             imgF.Save(fs,Imaging.ImageFormat.Png)
             fs.Close()
         )
-    override this.OnMouseUp e=
-        printfn"%d" e.Location.X 
+    
     override this.OnPaint e=
         let bit=new Bitmap(w,h)
         let g=Graphics.FromImage(bit)

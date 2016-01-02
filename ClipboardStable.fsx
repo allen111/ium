@@ -454,10 +454,8 @@ type ed() as this=
 
     
     override this.OnMouseUp e=
-        let l= transformPt v2w e.Location
-        aaa.Selecting l
-
-
+        e.Location |>transformPt v2w |> aaa.Selecting
+        
 
     override this.OnKeyDown e=
         
@@ -482,10 +480,8 @@ type ed() as this=
               
     
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 let n=new ed(Dock=DockStyle.Fill)
 f.Controls.Add(n)
-
 f.TopMost<-true
 f.Invalidate()
 n.Focus()
