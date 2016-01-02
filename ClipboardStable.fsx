@@ -1,3 +1,4 @@
+#load "imageComb.fsx"
 open  System;
 open  System.Runtime.InteropServices;
 
@@ -5,6 +6,7 @@ open System.Windows.Forms
 open System.Collections.Generic
 open System.Drawing
 open System.Text.RegularExpressions
+open ImageComb
 
 module climod =         
 //  module private clim = 
@@ -106,11 +108,13 @@ type ButtonContainer()as this=
     let bt2=new btn(Rectangle=Rectangle(51,0,50,30),String="su")
     let bt3=new btn(Rectangle=Rectangle(102,0,50,30),String="clear")
     let bt4=new btn(Rectangle=Rectangle(153,0,50,30),String="edit")
-    do buttons.Add(bt1);buttons.Add(bt2);buttons.Add(bt3);buttons.Add(bt4)
+    let bt5=new btn(Rectangle=Rectangle(204,0,50,30),String="comb")
+    do buttons.Add(bt1);buttons.Add(bt2);buttons.Add(bt3);buttons.Add(bt4);buttons.Add(bt5)
     do bt1.Click.Add(fun _-> (printfn"1" ))
     do bt2.Click.Add(fun _-> (printfn"2" ))
     do bt3.Click.Add(fun _-> (printfn"3" ))
     do bt4.Click.Add(fun _-> (printfn"4" ))
+    do bt5.Click.Add(fun _-> (printfn"5" ))
     
     override this.OnMouseUp e=
         buttons |> Seq.iter (fun b->
@@ -379,13 +383,28 @@ type ed() as this=
             let mutable h=string.Split('\n').Length+1
             
             let f2= new Form(Text="EditBox",TopMost=true)
-            let editT=new TextBox(Text=string,Dock=DockStyle.Top,Multiline=true)//mutliline pls
-            editT.Height<-h*editT.Font.Height
+            let editT=new TextBox(Text=string,Dock=DockStyle.Top,Multiline=true)
+            if (h*editT.Font.Height)<f2.Height-100 then
+                editT.Height<-h*editT.Font.Height
+            else 
+                editT.Height<-f2.Height-100
+            //da aggiungere lo scrool se e' troppo testo
             let btalpha=new Button(Text="Done",Dock=DockStyle.Top)
             f2.Controls.Add(btalpha)
             f2.Controls.Add(editT)
             f2.Show()
             btalpha.Click.Add(fun e->editT.SelectAll();editT.Copy();f2.Close())//unico modo con SetText lo fa 2 volte booh
+        )
+    do n1.Buttons.[4].Click.Add(fun b->
+        if Clipboard.ContainsImage() then 
+            let mutable img1=Clipboard.GetImage()
+            let f3= new Form(Text="imgcomb",TopMost=true,Size=Size(500,400))
+            let cmb= new ImageCombinator(Dock=DockStyle.Fill)
+            f3.Controls.Add(cmb)
+            cmb.AddImage(img1)
+            cmb.AddImage(img1)
+            f3.Show()  
+        
         )
 
 
@@ -432,5 +451,7 @@ f.Controls.Add(n)
 f.TopMost<-true
 f.Invalidate()
 n.Focus()
+
+
 
 

@@ -2,17 +2,10 @@
 open System.Drawing
 
 
-
-
-
-
-
-
-
-
 type ImageCombinator()as this=
     inherit UserControl()
     let images=new ResizeArray<Image>()
+    let buttons=new ResizeArray<Region>()
     let mutable w=100
     let mutable h=100
     let mutable imgF=null
@@ -24,6 +17,7 @@ type ImageCombinator()as this=
             |0->
                 images.Add(i)
                 
+                
             |1-> 
                 images.Add(i)
                 w<-w*2
@@ -32,7 +26,6 @@ type ImageCombinator()as this=
                 h<-h*2
             |3->
                 images.Add(i)
-
             |_->failwith("troppe")
     
     let remove(i:Image)=
@@ -77,7 +70,9 @@ type ImageCombinator()as this=
                 g.DrawImage(images.[3],w,h,w,h)
             |_->failwith("troppe?")
         imgF<-b
-
+//    let img3=Image.FromFile(@"C:\Users\allen\Pictures\a.png")
+//    let bt0=new Button(Dock=DockStyle.Right,Size=Size(100,100),BackgroundImage=img3)
+//    do this.Controls.Add(bt0)
     let bt1=new Button(Dock=DockStyle.Bottom,Text="salva")
     do this.Controls.Add(bt1)
     do bt1.Click.Add(fun e->
@@ -92,29 +87,36 @@ type ImageCombinator()as this=
             imgF.Save(fs,Imaging.ImageFormat.Png)
             fs.Close()
         )
-        
+    override this.OnMouseUp e=
+        printfn"%d" e.Location.X 
     override this.OnPaint e=
         let bit=new Bitmap(w,h)
         let g=Graphics.FromImage(bit)
         paintImgs(g,bit)
         e.Graphics.DrawImage(bit,0,0)
+        let mutable x=0
+        images |>Seq.iter (fun b->
+            e.Graphics.DrawImage(b,x,210,100,100)
+            let tmpReg=new Region(Rectangle(x,210,100,100))
+            x<-x+100
+            )
 
 
 
-    member this.Add=add
+    member this.AddImage=add 
     member this.Remove=remove
 
-let f=new Form(TopMost=true)
-f.Show()
+//let f=new Form(TopMost=true,Size=Size(500,400))
+//f.Show()
 
 
 
-let img1=Image.FromFile(@"C:\Users\allen\Pictures\a.png")
-let ic=new ImageCombinator(Dock=DockStyle.Fill)
-f.Controls.Add(ic)
-ic.Add(img1)
-ic.Add(img1)
-ic.Add(img1)
-ic.Add(img1)
-f.Invalidate()
+//let img1=Image.FromFile(@"C:\Users\allen\Pictures\a.png")
+//let ic=new ImageCombinator(Dock=DockStyle.Fill)
+//f.Controls.Add(ic)
+//ic.Add(img1)
+//ic.Add(img1)
+//ic.Add(img1)
+//ic.Add(img1)
+//f.Invalidate()
 
