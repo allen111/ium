@@ -9,7 +9,21 @@ type ImageCombinator()as this=
     let mutable w=100
     let mutable h=100
     let mutable imgF=null
+    let mutable prevImgs=new ResizeArray<Image>()
     
+
+
+    let addPrev(is)=
+        prevImgs<-is
+        if prevImgs.Count=0 then
+            printfn"mmm no imgs"
+        else
+            let mutable x=0
+            for n in 0..prevImgs.Count-1 do
+                let tmpReg=new Region(Rectangle(x,210,100,100))
+                buttons.Add(tmpReg)
+                x<-x+100
+
 
     let add(i:Image)=
         let tmp=images.Count
@@ -70,9 +84,7 @@ type ImageCombinator()as this=
                 g.DrawImage(images.[3],w,h,w,h)
             |_->failwith("troppe?")
         imgF<-b
-//    let img3=Image.FromFile(@"C:\Users\allen\Pictures\a.png")
-//    let bt0=new Button(Dock=DockStyle.Right,Size=Size(100,100),BackgroundImage=img3)
-//    do this.Controls.Add(bt0)
+
     let bt1=new Button(Dock=DockStyle.Bottom,Text="salva")
     do this.Controls.Add(bt1)
     do bt1.Click.Add(fun e->
@@ -89,33 +101,22 @@ type ImageCombinator()as this=
         )
     
     override this.OnPaint e=
-        let bit=new Bitmap(w,h)
+        let bit=new Bitmap(w*2,h*2)
         let g=Graphics.FromImage(bit)
         paintImgs(g,bit)
         e.Graphics.DrawImage(bit,0,0)
         let mutable x=0
-        images |>Seq.iter (fun b->
+        prevImgs |>Seq.iter (fun b->
+           if x<400 then
             e.Graphics.DrawImage(b,x,210,100,100)
-            let tmpReg=new Region(Rectangle(x,210,100,100))
+            
             x<-x+100
             )
+        printfn"%A" x
+        e.Graphics.FillRectangle(Brushes.Aqua,x,210,50,100)
 
 
 
-    member this.AddImage=add 
+    member this.CombImage=add 
     member this.Remove=remove
-
-//let f=new Form(TopMost=true,Size=Size(500,400))
-//f.Show()
-
-
-
-//let img1=Image.FromFile(@"C:\Users\allen\Pictures\a.png")
-//let ic=new ImageCombinator(Dock=DockStyle.Fill)
-//f.Controls.Add(ic)
-//ic.Add(img1)
-//ic.Add(img1)
-//ic.Add(img1)
-//ic.Add(img1)
-//f.Invalidate()
-
+    member this.AddImages=addPrev

@@ -30,7 +30,7 @@ type ClipboardChangedEventArgs ()=
      let a=2
      //nel caso mettici qualcosa
 
-//nuovo aggiornamento migliorato e sticazzi
+//nuovo aggiornamento migliorato
 type ClipboardAux()as this=
     inherit Form()
     let ClipboardChangedEvent=new Event<ClipboardChangedEventArgs>()
@@ -72,7 +72,7 @@ type ClipboardAux()as this=
     
 //====================================================================================================================================
 //------------------------------------------------------------------------------------------------------------------------------------
-
+//i bottoni in basso
 type btn()=
     let mutable rect=Rectangle()
     let mutable region= new Region(rect)
@@ -100,8 +100,8 @@ type btn()=
 
 
 //************************************************************************************************************************************
-
-type ButtonContainer()as this=
+//contenitore dei bottoni (comprende anche le scorciatoie da tastiera)
+type ButtonContainer()=
     inherit UserControl()
     let mutable buttons= new ResizeArray<btn>()
     let bt1=new btn(Rectangle=Rectangle(0,0,50,30),String="giu")
@@ -120,19 +120,24 @@ type ButtonContainer()as this=
         buttons |> Seq.iter (fun b->
             b.Check e.Location
             )
+
     override this.OnPaint e=
         buttons |> Seq.iter (fun b->
             b.Paint e.Graphics 
             )
+
     override this.OnKeyDown e=
         match e.KeyCode with
             |Keys.S->bt1.ClickT(null)
             |Keys.W->bt2.ClickT(null)
             |_->()
+
     member this.Buttons
         with get()=buttons
         and set(v)=buttons<-v
+
 //3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333
+//tipo di un singolo appunto
 type appunto()=
     let mutable str=""
     let mutable tipo= -1
@@ -148,8 +153,8 @@ type appunto()=
     let mutable reg=new Region()
     let regRes(pf:PointF)=
         match tipo with
-            |0->reg<-new Region(Rectangle(int location.X,int location.Y,f.ClientSize.Width-10,(altezza*15)-5))
-            |3->reg<-new Region(Rectangle(int location.X,int location.Y,f.ClientSize.Width-10,102))
+            |0->reg<-new Region(Rectangle(int location.X-3,int location.Y-5,f.ClientSize.Width-10,(altezza*15)-5))
+            |3->reg<-new Region(Rectangle(int location.X-3,int location.Y-5,f.ClientSize.Width-10,112))
             |_->()
 
     let sizing ()=
@@ -207,6 +212,7 @@ type appunto()=
     member this.Reg
         with get()=reg
 //===========================================================================
+//contenitore degli appunti con funzioni degli appunti 
 type clipH()=
     let mutable applist=new List<appunto>()
     let mutable maxCapacity=10
@@ -262,6 +268,16 @@ type clipH()=
     let mutable x= Updater.ClipboardChanged.Subscribe (fun e->
                 Update()
                 )
+    
+
+    let getImgs ()=
+        let imgs=new ResizeArray<Image>()
+        applist|>Seq.iter(fun b->
+            if b.TIPO=3 then
+                imgs.Add(b.Img)
+            )
+        imgs
+
 
     let selecting (p:Point)=
         applist|>Seq.iteri (fun i b->
@@ -342,12 +358,15 @@ type clipH()=
     member this.Aux=Updater
     member this.UpdateEvt=evtUpd.Publish
     member this.Selecting=selecting
+    member this.GetImgs=getImgs
 //================================================================================================================================
-
+//clipboard manager type
 type ed() as this=
     inherit UserControl()
+
     do this.SetStyle(ControlStyles.AllPaintingInWmPaint 
                      ||| ControlStyles.OptimizedDoubleBuffer, true)
+
     do printfn"%A" (this.CanSelect)
     let mutable w2v = new Drawing2D.Matrix()
     let mutable v2w = new Drawing2D.Matrix()
@@ -374,6 +393,7 @@ type ed() as this=
     
     
     let scrool (app:appunto)=
+    //sposta la view per visualizzare l'appunto selezionato
         let tmpP=transformP w2v app.Location
         
         if app.TIPO=3 && tmpP.Y+100.f> single this.Height then
@@ -429,13 +449,15 @@ type ed() as this=
             btalpha.Click.Add(fun e->editT.SelectAll();editT.Copy();f2.Close())//unico modo con SetText lo fa 2 volte booh
         )
     do n1.Buttons.[4].Click.Add(fun b->
+        let mutable imgs=aaa.GetImgs()
+
+        
         if Clipboard.ContainsImage() then 
             let mutable img1=Clipboard.GetImage()
             let f3= new Form(Text="imgcomb",TopMost=true,Size=Size(500,400))
             let cmb= new ImageCombinator(Dock=DockStyle.Fill)
             f3.Controls.Add(cmb)
-            cmb.AddImage(img1)
-            cmb.AddImage(img1)
+            cmb.AddImages(imgs)
             f3.Show()  
         
         )
