@@ -10,6 +10,7 @@ type ImageCombinator()as this=
     let mutable h=100
     let mutable imgF=null
     let mutable prevImgs=new ResizeArray<Image>()
+    let mutable selected= Array.zeroCreate 0
     
 
 
@@ -18,6 +19,7 @@ type ImageCombinator()as this=
         if prevImgs.Count=0 then
             printfn"mmm no imgs"
         else
+            selected<-Array.zeroCreate prevImgs.Count
             let mutable x=0
             for n in 0..prevImgs.Count-1 do
                 let tmpReg=new Region(Rectangle(x,210,100,100))
@@ -99,20 +101,36 @@ type ImageCombinator()as this=
             imgF.Save(fs,Imaging.ImageFormat.Png)
             fs.Close()
         )
-    
+    override this.OnMouseUp e=
+        buttons|>Seq.iteri (fun i b->
+            if b.IsVisible e.Location then
+                if selected.[i]=0 then
+                    add(prevImgs.[i])
+                    selected.[i]<-1
+                else
+                    remove prevImgs.[i]
+                    selected.[i]<-0
+            
+            )
+        this.Invalidate()
+
+
+
     override this.OnPaint e=
-        let bit=new Bitmap(w*2,h*2)
+        let bit=new Bitmap(200,200)
         let g=Graphics.FromImage(bit)
         paintImgs(g,bit)
         e.Graphics.DrawImage(bit,0,0)
         let mutable x=0
-        prevImgs |>Seq.iter (fun b->
+        prevImgs |>Seq.iteri (fun i b->
            if x<400 then
-            e.Graphics.DrawImage(b,x,210,100,100)
+                if selected.[i]=1 then
+                    e.Graphics.DrawRectangle(Pens.Red,x-2,208,102,102)
+                e.Graphics.DrawImage(b,x,210,100,100)
             
-            x<-x+100
+                x<-x+100
             )
-        printfn"%A" x
+        
         e.Graphics.FillRectangle(Brushes.Aqua,x,210,50,100)
 
 

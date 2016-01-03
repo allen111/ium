@@ -367,7 +367,7 @@ type ed() as this=
     do this.SetStyle(ControlStyles.AllPaintingInWmPaint 
                      ||| ControlStyles.OptimizedDoubleBuffer, true)
 
-    do printfn"%A" (this.CanSelect)
+    
     let mutable w2v = new Drawing2D.Matrix()
     let mutable v2w = new Drawing2D.Matrix()
     let  aaa= new clipH()
@@ -452,11 +452,12 @@ type ed() as this=
         let mutable imgs=aaa.GetImgs()
 
         
-        if Clipboard.ContainsImage() then 
+        if Clipboard.ContainsImage() then
             let mutable img1=Clipboard.GetImage()
             let f3= new Form(Text="imgcomb",TopMost=true,Size=Size(500,400))
             let cmb= new ImageCombinator(Dock=DockStyle.Fill)
             f3.Controls.Add(cmb)
+            imgs.Reverse()
             cmb.AddImages(imgs)
             f3.Show()  
         
@@ -466,9 +467,9 @@ type ed() as this=
     let t= new Timer(Interval=1)
     do t.Tick.Add(fun _->this.Invalidate())
     do t.Start()
-    
+   
     override this.OnMouseWheel  e=
-        //scroll base 
+        //scroll base
         if e.Delta>0 then
             translateW(0.f,15.f)
         else
@@ -491,7 +492,7 @@ type ed() as this=
             |Keys.W->
                 let x=(aaa.ShiftUp())
                 if x.IsSome then
-                    scrool x.Value    
+                    scrool x.Value
             |_->()
 
     override this.OnPaint e=
