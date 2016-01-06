@@ -69,32 +69,62 @@ type ImageCombinator()as this=
             |_->failwith("troppe?")
 
     let paintImgs(g:Graphics,b:Bitmap)=
+        if images.Count<>0 then
+            imgF<-new Bitmap(images.[0].Width*2,images.[0].Height*2)
+        else
+            imgF<-new Bitmap(200,200)
+        let gf=Graphics.FromImage(imgF)
         g.Clear(Color.Black)
+        gf.Clear(Color.Black)
         let tmp=images.Count
         let w=100
         let h=100
+        let mutable hf=100
+        let mutable wf=100
         match tmp with
             |0->()
             |1-> 
                 g.DrawImage(images.[0],0,0,w,h)
+                hf<-images.[0].Height
+                wf<-images.[0].Width
+                gf.DrawImage(images.[0],0,0,wf,hf)
+
             |2->
                 g.DrawImage(images.[0],0,0,w,h)
                 g.DrawImage(images.[1],w,0,w,h)
+                hf<-images.[0].Height
+                wf<-images.[0].Width
+                gf.DrawImage(images.[0],0,0,wf,hf)
+                gf.DrawImage(images.[0],wf,0,wf,hf)
+
+
             |3->
                 g.DrawImage(images.[0],0,0,w,h)
                 g.DrawImage(images.[1],w,0,w,h)
                 g.DrawImage(images.[2],0,h,w,h)
+                hf<-images.[0].Height
+                wf<-images.[0].Width
+                gf.DrawImage(images.[0],0,0,wf,hf)
+                gf.DrawImage(images.[0],wf,0,wf,hf)
+                gf.DrawImage(images.[0],0,hf,wf,hf)
             |4->
                 g.DrawImage(images.[0],0,0,w,h)
                 g.DrawImage(images.[1],w,0,w,h)
                 g.DrawImage(images.[2],0,h,w,h)
                 g.DrawImage(images.[3],w,h,w,h)
+                hf<-images.[0].Height
+                wf<-images.[0].Width
+                gf.DrawImage(images.[0],0,0,wf,hf)
+                gf.DrawImage(images.[0],wf,0,wf,hf)
+                gf.DrawImage(images.[0],0,hf,wf,hf)
+                gf.DrawImage(images.[0],wf,hf,wf,hf)
             |_->failwith("troppe?")
-        imgF<-b
+        //imgF<-b
 
     let bt1=new Button(Dock=DockStyle.Bottom,Text="salva")
     do this.Controls.Add(bt1)
     do bt1.Click.Add(fun e->
+        
         let fd=new SaveFileDialog()
         fd.DefaultExt<-"png"
         fd.Filter <- "PNG|*.png";
@@ -153,8 +183,9 @@ type ImageCombinator()as this=
         
         let bit=new Bitmap(200,200)
         let g=Graphics.FromImage(bit)
+        
         paintImgs(g,bit)
-        e.Graphics.DrawImage(bit,0,0)
+        e.Graphics.DrawImage(bit,0,0,200,200)
         let mutable x=startPrev
         
         prevImgs |>Seq.iteri (fun i b->
