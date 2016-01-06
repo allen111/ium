@@ -4,6 +4,8 @@ open System.Drawing
 
 type ImageCombinator()as this=
     inherit UserControl()
+    do this.SetStyle(ControlStyles.AllPaintingInWmPaint 
+                     ||| ControlStyles.OptimizedDoubleBuffer, true)
     let images=new ResizeArray<Image>()
     let buttons=new ResizeArray<Region>()
     let mutable w=100
@@ -11,8 +13,11 @@ type ImageCombinator()as this=
     let mutable imgF=null
     let mutable prevImgs=new ResizeArray<Image>()
     let mutable selected= Array.zeroCreate 0
-    
-
+    let mutable page =1
+    let mutable idx=0
+    let mutable nextReg=new Region(Rectangle(404,210,50,100))
+    let startPrev=50
+    let mutable prevReg=new Region(Rectangle(0,210,50,100))
 
     let addPrev(is)=
         prevImgs<-is
@@ -20,8 +25,8 @@ type ImageCombinator()as this=
             printfn"mmm no imgs"
         else
             selected<-Array.zeroCreate prevImgs.Count
-            let mutable x=0
-            for n in 0..prevImgs.Count-1 do
+            let mutable x=startPrev
+            for n in 0..3 do
                 let tmpReg=new Region(Rectangle(x,210,100,100))
                 buttons.Add(tmpReg)
                 x<-x+100
@@ -42,7 +47,7 @@ type ImageCombinator()as this=
                 h<-h*2
             |3->
                 images.Add(i)
-            |_->failwith("troppe")
+            |_->printfn"sono gia 4 " 
     
     let remove(i:Image)=
         let tmp=images.Count
@@ -104,35 +109,67 @@ type ImageCombinator()as this=
     override this.OnMouseUp e=
         buttons|>Seq.iteri (fun i b->
             if b.IsVisible e.Location then
-                if selected.[i]=0 then
-                    add(prevImgs.[i])
-                    selected.[i]<-1
+                
+                if selected.[i+idx]=0 then
+                    add(prevImgs.[i+idx])
+                    selected.[i+idx]<-1
                 else
-                    remove prevImgs.[i]
-                    selected.[i]<-0
+                    remove prevImgs.[i+idx]
+                    selected.[i+idx]<-0
             
             )
+        if nextReg.IsVisible(e.Location) && page<=prevImgs.Count/4 then
+            
+            page<-page+1
+            idx<-idx+4
+            
+            let rem=idx-(prevImgs.Count)%4
+            buttons.Clear()
+            
+            match rem with
+            |1->buttons.Add(new Region(Rectangle(startPrev+0,210,100,100)));buttons.Add(new Region(Rectangle(startPrev+100,210,100,100)));buttons.Add(new Region(Rectangle(startPrev+200,210,100,100)))
+            |2->buttons.Add(new Region(Rectangle(startPrev+0,210,100,100)));buttons.Add(new Region(Rectangle(startPrev+100,210,100,100)))
+            |3->buttons.Add(new Region(Rectangle(startPrev+0,210,100,100)))
+            |4->buttons.Clear()
+            |_->()
+
+
+        if prevReg.IsVisible(e.Location) && page>1 then
+            page<-page-1
+            idx<-idx-4
+            
+            
+            buttons.Clear()
+            let mutable x=startPrev
+            for n in 0..3 do
+                let tmpReg=new Region(Rectangle(x,210,100,100))
+                buttons.Add(tmpReg)
+                x<-x+100
+            
+
         this.Invalidate()
 
-
-
     override this.OnPaint e=
+        
         let bit=new Bitmap(200,200)
         let g=Graphics.FromImage(bit)
         paintImgs(g,bit)
         e.Graphics.DrawImage(bit,0,0)
-        let mutable x=0
-        prevImgs |>Seq.iteri (fun i b->
-           if x<400 then
-                if selected.[i]=1 then
-                    e.Graphics.DrawRectangle(Pens.Red,x-2,208,102,102)
-                e.Graphics.DrawImage(b,x,210,100,100)
-            
-                x<-x+100
-            )
+        let mutable x=startPrev
         
-        e.Graphics.FillRectangle(Brushes.Aqua,x,210,50,100)
-
+        prevImgs |>Seq.iteri (fun i b->
+           if i<page*4 && i>=(page-1)*4 then
+                if selected.[i]=1 then
+                    e.Graphics.DrawRectangle(Pens.Red,x-1,209,101,101)
+                e.Graphics.DrawImage(b,x,210,100,100)
+                
+            
+                x<-x+101
+            )
+        e.Graphics.FillRegion(Brushes.Aqua,prevReg)
+        nextReg<-new Region(Rectangle(x,210,50,100))
+        e.Graphics.FillRegion(Brushes.Aqua,nextReg)
+        
 
 
     member this.CombImage=add 
