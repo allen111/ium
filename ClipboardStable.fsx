@@ -452,7 +452,7 @@ type ed() as this=
         let mutable imgs=aaa.GetImgs()
 
         
-        if Clipboard.ContainsImage() then
+        if imgs.Count<>0 then
             let mutable img1=Clipboard.GetImage()
             let f3= new Form(Text="imgcomb",TopMost=true,Size=Size(500,400))
             let cmb= new ImageCombinator(Dock=DockStyle.Fill)
