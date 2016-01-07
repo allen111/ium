@@ -142,7 +142,8 @@ type appunto()=
     let mutable str=""
     let mutable tipo= -1
     let mutable img=null
-    let mutable path=""
+    let mutable path=null
+    let mutable strs=new ResizeArray<String>()
     let mutable location=PointF()
     let mutable altezza=1
     let fnt=new Font(FontFamily.GenericSansSerif,11.f)
@@ -154,6 +155,7 @@ type appunto()=
     let regRes(pf:PointF)=
         match tipo with
             |0->reg<-new Region(Rectangle(int location.X-3,int location.Y-5,f.ClientSize.Width-10,(altezza*15)-5))
+            |2->reg<-new Region(Rectangle(int location.X-3,int location.Y-5,f.ClientSize.Width-10,(altezza*15)-5))
             |3->reg<-new Region(Rectangle(int location.X-3,int location.Y-5,f.ClientSize.Width-10,112))
             |_->()
 
@@ -179,7 +181,9 @@ type appunto()=
         match tipo with 
             |0->g.FillRegion(Brushes.Aqua,reg);g.DrawString(sizedString,fnt,bru,location);
             |1->()
-            |2->g.DrawString(str,fnt,bru,p)
+            |2->
+                g.FillRegion(Brushes.Aqua,reg);
+                strs|>Seq.iteri (fun i b->  g.DrawString(b,fnt,bru,PointF(p.X,p.Y+single(i*15))))
             |3->
                 g.FillRegion(Brushes.Aqua,reg)
                 if selected then
@@ -209,6 +213,9 @@ type appunto()=
     member this.Img
         with get()=img
         and set(v)=img<-v
+    member this.STRS
+        with get()=strs
+        and set(v)=strs<-v;altezza<-v.Count+1
     member this.Reg
         with get()=reg
 //===========================================================================
@@ -244,16 +251,21 @@ type clipH()=
             let tmpFD=Clipboard.GetFileDropList()
             let a=tmpFD.GetEnumerator()
             applist |> Seq.iter (fun b-> b.Selected<-false)
-            let mutable h=1
+            
+            let strarr=new ResizeArray<String>()
             while(a.MoveNext()) do
                 let tmpBs=a.Current.Split('\\')
                 let tmpb=tmpBs.[tmpBs.Length-1]
-                let appFDT=new appunto(STR=tmpb,Path=a.Current,Location=PointF(10.f , single (currCapacity)*15.f),TIPO=2,Altezza=1,Selected=true)
-                applist.Add(appFDT)
-                evtUpd.Trigger(null)
-                currSelected<-1
-                currCapacity<-currCapacity+1
-                h<-h+1
+                strarr.Add(tmpb)     
+                
+                
+            let appFDT=new appunto(STRS=strarr,Path=tmpFD,Location=PointF(10.f , single (currCapacity)*15.f),TIPO=2,Selected=true)
+            printfn"%A" tmpFD
+            applist.Add(appFDT)
+            evtUpd.Trigger(null)
+            currSelected<-1
+            currCapacity<-currCapacity+1
+            
          else
             if Clipboard.ContainsImage() then
                 let tmpIMG=Clipboard.GetImage()
@@ -287,6 +299,9 @@ type clipH()=
                 b.Selected<-true
                 match b.TIPO with
                     |0->Clipboard.SetText(b.STR)
+                    |2->
+                          Clipboard.SetFileDropList(b.Path);printfn"%A" b.Path
+
                     |3->Clipboard.SetImage(b.Img)
                     |_->()
                 x<- Updater.ClipboardChanged.Subscribe (fun e->
@@ -311,6 +326,7 @@ type clipH()=
                 
                 match tmpSel.TIPO with
                     |0->Clipboard.SetText(tmpSel.STR)
+                    |2-> Clipboard.SetFileDropList(tmpSel.Path)
                     |3->Clipboard.SetImage(tmpSel.Img)
                     |_->()
                 x<- Updater.ClipboardChanged.Subscribe (fun e->
@@ -332,6 +348,7 @@ type clipH()=
             
             match tmpSel.TIPO with
                     |0->Clipboard.SetText(tmpSel.STR)
+                    |2->Clipboard.SetFileDropList(tmpSel.Path)
                     |3->Clipboard.SetImage(tmpSel.Img)
                     |_->()
             x<- Updater.ClipboardChanged.Subscribe (fun e->
@@ -406,6 +423,12 @@ type ed() as this=
             let h= tmpP.Y + 20.f + single (app.Altezza*15) - single this.Height
             translateW(0.f,-h)
         if app.TIPO=0 && tmpP.Y<15.f then
+            let h=Math.Abs(tmpP.Y)+10.f
+            translateW(0.f,h)
+        if app.TIPO=2 &&  tmpP.Y+15.f> (single this.Height) - 20.f then
+            let h= tmpP.Y + 20.f + single (app.Altezza*15) - single this.Height
+            translateW(0.f,-h)
+        if app.TIPO=2 && tmpP.Y<15.f then
             let h=Math.Abs(tmpP.Y)+10.f
             translateW(0.f,h)
 
