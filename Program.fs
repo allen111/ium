@@ -1,15 +1,16 @@
-#load "imageComb.fsx"
+﻿module program
+
 open  System;
 open  System.Runtime.InteropServices;
+open  System.IO
 
 open System.Windows.Forms
 open System.Collections.Generic
 open System.Drawing
 open System.Text.RegularExpressions
-open ImageComb
+
 
 module climod =         
-//  module private clim = 
     [<DllImport( "user32.dll")>]
     extern int SetClipboardViewer(int hWndNewViewer)
 
@@ -28,9 +29,8 @@ f.Show()
 
 type ClipboardChangedEventArgs ()=
      let a=2
-     //nel caso mettici qualcosa
 
-//nuovo aggiornamento migliorato
+
 type ClipboardAux()as this=
     inherit Form()
     let ClipboardChangedEvent=new Event<ClipboardChangedEventArgs>()
@@ -46,9 +46,10 @@ type ClipboardAux()as this=
         
         match m.Msg with
          |wm when wm=WM_DRAWCLIPBOARD->
-            //fai quello che vuoi clipboard changed
+            //clipboard changed trigger
             
             ClipboardChangedEvent.Trigger(new ClipboardChangedEventArgs())
+
             let tmo=climod.SendMessage(nextClipboardViewer,m.Msg,m.WParam,m.LParam)
             ()
          |wm when wm=WM_CHANGECBCHAIN->
@@ -71,6 +72,214 @@ type ClipboardAux()as this=
 
     
 //====================================================================================================================================
+type ImageCombinator()as this=
+    inherit UserControl()
+    do this.SetStyle(ControlStyles.AllPaintingInWmPaint 
+                     ||| ControlStyles.OptimizedDoubleBuffer, true)
+    let images=new ResizeArray<Image>()
+    let buttons=new ResizeArray<Region>()
+    let mutable w=100
+    let mutable h=100
+    let mutable imgF=null
+    let mutable prevImgs=new ResizeArray<Image>()
+    let mutable selected= Array.zeroCreate 0
+    let mutable page =1
+    let mutable idx=0
+    let mutable nextReg=new Region(Rectangle(404,210,50,100))
+    let startPrev=50
+    let mutable prevReg=new Region(Rectangle(0,210,50,100))
+
+    let addPrev(is)=
+        prevImgs<-is
+        if prevImgs.Count=0 then
+            printfn"mmm no imgs"
+        else
+            selected<-Array.zeroCreate prevImgs.Count
+            let mutable x=startPrev
+            for n in 0..3 do
+                let tmpReg=new Region(Rectangle(x,210,100,100))
+                buttons.Add(tmpReg)
+                x<-x+100
+
+
+    let add(i:Image)=
+        let tmp=images.Count
+        match tmp with
+            |0->
+                images.Add(i)
+                
+                
+            |1-> 
+                images.Add(i)
+                w<-w*2
+            |2->
+                images.Add(i)
+                h<-h*2
+            |3->
+                images.Add(i)
+            |_->printfn"sono gia 4 " 
+    
+    let remove(i:Image)=
+        let tmp=images.Count
+        match tmp with
+            |0->failwith("insieme vuoto")
+            |1-> 
+                let a=images.Remove(i)
+                w<-100
+                h<-100
+            |2->
+                let a=images.Remove(i)
+                w<-w/2
+            |3->
+                let a=images.Remove(i)
+                h<-h/2
+            |4->
+                let a=images.Remove(i)
+                ()
+            |_->failwith("troppe?")
+
+    let paintImgs(g:Graphics,b:Bitmap)=
+        if images.Count<>0 then
+            imgF<-new Bitmap(images.[0].Width*2,images.[0].Height*2)
+        else
+            imgF<-new Bitmap(200,200)
+        let gf=Graphics.FromImage(imgF)
+        g.Clear(Color.Black)
+        gf.Clear(Color.Black)
+        let tmp=images.Count
+        let w=100
+        let h=100
+        let mutable hf=100
+        let mutable wf=100
+        match tmp with
+            |0->()
+            |1-> 
+                g.DrawImage(images.[0],0,0,w,h)
+                hf<-images.[0].Height
+                wf<-images.[0].Width
+                gf.DrawImage(images.[0],0,0,wf,hf)
+
+            |2->
+                g.DrawImage(images.[0],0,0,w,h)
+                g.DrawImage(images.[1],w,0,w,h)
+                hf<-images.[0].Height
+                wf<-images.[0].Width
+                gf.DrawImage(images.[0],0,0,wf,hf)
+                gf.DrawImage(images.[0],wf,0,wf,hf)
+
+
+            |3->
+                g.DrawImage(images.[0],0,0,w,h)
+                g.DrawImage(images.[1],w,0,w,h)
+                g.DrawImage(images.[2],0,h,w,h)
+                hf<-images.[0].Height
+                wf<-images.[0].Width
+                gf.DrawImage(images.[0],0,0,wf,hf)
+                gf.DrawImage(images.[0],wf,0,wf,hf)
+                gf.DrawImage(images.[0],0,hf,wf,hf)
+            |4->
+                g.DrawImage(images.[0],0,0,w,h)
+                g.DrawImage(images.[1],w,0,w,h)
+                g.DrawImage(images.[2],0,h,w,h)
+                g.DrawImage(images.[3],w,h,w,h)
+                hf<-images.[0].Height
+                wf<-images.[0].Width
+                gf.DrawImage(images.[0],0,0,wf,hf)
+                gf.DrawImage(images.[0],wf,0,wf,hf)
+                gf.DrawImage(images.[0],0,hf,wf,hf)
+                gf.DrawImage(images.[0],wf,hf,wf,hf)
+            |_->failwith("troppe?")
+
+
+    let bt1=new Button(Dock=DockStyle.Bottom,Text="salva")
+    do this.Controls.Add(bt1)
+    do bt1.Click.Add(fun e->
+        
+        let fd=new SaveFileDialog()
+        fd.DefaultExt<-"png"
+        fd.Filter <- "PNG|*.png";
+        fd.Title <- "Save an Image File";
+        fd.FileName<-"Image.png"
+        let x=fd.ShowDialog()
+        if fd.FileName<>"" then
+            let fs=fd.OpenFile()
+            imgF.Save(fs,Imaging.ImageFormat.Png)
+            fs.Close()
+        )
+    override this.OnMouseUp e=
+        buttons|>Seq.iteri (fun i b->
+            if b.IsVisible e.Location  then
+                
+                if selected.[i+idx]=0  then
+                    if images.Count<4 then
+                        add(prevImgs.[i+idx])
+                        selected.[i+idx]<-1
+                else
+                    remove prevImgs.[i+idx]
+                    selected.[i+idx]<-0
+            
+            )
+        if nextReg.IsVisible(e.Location) && page<=prevImgs.Count/4 then
+            
+            page<-page+1
+            idx<-idx+4
+            
+            let rem=idx-(prevImgs.Count)%4
+            buttons.Clear()
+            
+            match rem with
+            |1->buttons.Add(new Region(Rectangle(startPrev+0,210,100,100)));buttons.Add(new Region(Rectangle(startPrev+100,210,100,100)));buttons.Add(new Region(Rectangle(startPrev+200,210,100,100)))
+            |2->buttons.Add(new Region(Rectangle(startPrev+0,210,100,100)));buttons.Add(new Region(Rectangle(startPrev+100,210,100,100)))
+            |3->buttons.Add(new Region(Rectangle(startPrev+0,210,100,100)))
+            |4->buttons.Clear()
+            |_->()
+
+
+        if prevReg.IsVisible(e.Location) && page>1 then
+            page<-page-1
+            idx<-idx-4
+            
+            
+            buttons.Clear()
+            let mutable x=startPrev
+            for n in 0..3 do
+                let tmpReg=new Region(Rectangle(x,210,100,100))
+                buttons.Add(tmpReg)
+                x<-x+100
+            
+
+        this.Invalidate()
+
+    override this.OnPaint e=
+        
+        let bit=new Bitmap(200,200)
+        let g=Graphics.FromImage(bit)
+        
+        paintImgs(g,bit)
+        e.Graphics.DrawImage(bit,0,0,200,200)
+        let mutable x=startPrev
+        
+        prevImgs |>Seq.iteri (fun i b->
+           if i<page*4 && i>=(page-1)*4 then
+                if selected.[i]=1 then
+                    e.Graphics.DrawRectangle(Pens.Red,x-1,209,101,101)
+                e.Graphics.DrawImage(b,x,210,100,100)
+                
+            
+                x<-x+101
+            )
+        e.Graphics.FillRegion(Brushes.Aqua,prevReg)
+        nextReg<-new Region(Rectangle(x,210,50,100))
+        e.Graphics.FillRegion(Brushes.Aqua,nextReg)
+        
+
+
+    member this.CombImage=add 
+    member this.Remove=remove
+    member this.AddImages=addPrev
+
+
+
 //------------------------------------------------------------------------------------------------------------------------------------
 //i bottoni in basso
 type btn()=
@@ -101,14 +310,14 @@ type btn()=
 
 //************************************************************************************************************************************
 //contenitore dei bottoni (comprende anche le scorciatoie da tastiera)
-type ButtonContainer() as this=
+type ButtonContainer() =
     inherit UserControl()
     let mutable buttons= new ResizeArray<btn>()
     let bt1=new btn(Rectangle=Rectangle(0,0,50,30),String="giu")
     let bt2=new btn(Rectangle=Rectangle(51,0,50,30),String="su")
     let bt3=new btn(Rectangle=Rectangle(102,0,50,30),String="clear")
     let bt4=new btn(Rectangle=Rectangle(153,0,50,30),String="edit")
-    let bt5=new btn(Rectangle=Rectangle(204,0,50,30),String="comb")
+    let bt5=new btn(Rectangle=Rectangle(204,0,80,30),String="img Comb")
     do buttons.Add(bt1);buttons.Add(bt2);buttons.Add(bt3);buttons.Add(bt4);buttons.Add(bt5)
     do bt1.Click.Add(fun _-> (printfn"1" ))
     do bt2.Click.Add(fun _-> (printfn"2" ))
@@ -169,13 +378,10 @@ type appunto()=
     (*
         tipi
             0->text
-            1->img file
             2->filepath group
             3->image(bitmap) screenshot
     *)
     
-
-
 
     let paint (g:Graphics)(p:PointF)=
         if selected then
@@ -424,12 +630,6 @@ type ed() as this=
     let n1=new ButtonContainer(Dock=DockStyle.Bottom,AutoSize=false,Height=30,BackColor=Color.Cyan)
     do this.Controls.Add(n1)
     
-    
-
-
-
-
-    
     let scrool (app:appunto)=
     //sposta la view per visualizzare l'appunto selezionato
         let tmpP=transformP w2v app.Location
@@ -480,17 +680,36 @@ type ed() as this=
             let mutable h=string.Split('\n').Length+1
             
             let f2= new Form(Text="EditBox",TopMost=true)
-            let editT=new TextBox(Text=string,Dock=DockStyle.Top,Multiline=true)
+            let editT=new TextBox(Text=string,Dock=DockStyle.Top,Multiline=true,ScrollBars = ScrollBars.Vertical)
             if (h*editT.Font.Height)<f2.Height-100 then
                 editT.Height<-h*editT.Font.Height
             else 
                 editT.Height<-f2.Height-100
-            //da aggiungere lo scrool se e' troppo testo
-            let btalpha=new Button(Text="Done",Dock=DockStyle.Top)
+            
+
+            let bt1=new Button(Dock=DockStyle.Top,Text="salva")
+            do f2.Controls.Add(bt1)
+            do bt1.Click.Add(fun e->
+        
+                let fd=new SaveFileDialog()
+                fd.DefaultExt<-"txt"
+                fd.Filter <- "TXT|*.txt";
+                fd.Title <- "Save a text file";
+                fd.FileName<-"appunto.txt"
+                let x=fd.ShowDialog()
+                if fd.FileName<>"" then
+                    let fs=fd.FileName
+                    File.WriteAllText(fs,editT.Text)
+                    
+                )
+
+
+
+            let btalpha=new Button(Text="Copialo",Dock=DockStyle.Top)
             f2.Controls.Add(btalpha)
             f2.Controls.Add(editT)
             f2.Show()
-            btalpha.Click.Add(fun e->editT.SelectAll();editT.Copy();f2.Close())//unico modo con SetText lo fa 2 volte booh
+            btalpha.Click.Add(fun e->editT.SelectAll();editT.Copy();f2.Close())
         )
     do n1.Buttons.[4].Click.Add(fun b->
         let mutable imgs=aaa.GetImgs()
@@ -513,7 +732,6 @@ type ed() as this=
     do t.Start()
    
     override this.OnMouseWheel  e=
-        //scroll base
         if e.Delta>0 then
             translateW(0.f,15.f)
         else
@@ -554,8 +772,9 @@ let n=new ed(Dock=DockStyle.Fill)
 f.Controls.Add(n)
 f.TopMost<-true
 f.Invalidate()
-n.Focus()
 
 
+[<System.STAThreadAttribute>]
+Application.Run(f)
 
 
